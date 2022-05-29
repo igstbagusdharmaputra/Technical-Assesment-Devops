@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    kubernetes.io/object: service
+    app: demoapp
+    env: production
+  name: demoapp-production-service
+  namespace: production
+spec:
+  ports:
+  - port: 80
+    protocol: TCP
+    targetPort: 8080
+  selector:
+    app: demoapp
+    env: production
+  type: ClusterIP

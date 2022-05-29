@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    kubernetes.io/object: service
+    app: demoapp
+    env: staging
+  name: demoapp-staging-service
+  namespace: staging
+spec:
+  ports:
+  - port: 80
+    protocol: TCP
+    targetPort: 8080
+  selector:
+    app: demoapp
+    env: staging
+  type: ClusterIP

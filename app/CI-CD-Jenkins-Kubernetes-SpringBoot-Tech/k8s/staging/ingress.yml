@@ -1,0 +1,22 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: demoapp-staging-ingress
+  namespace: staging
+  labels:
+    kubernetes.io/object: ingress
+    app: demoapp
+    env: staging
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: webapp.staging.local
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: demoapp-staging-service
+            port:
+              number: 80

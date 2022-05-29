@@ -1,0 +1,22 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: demoapp-production-ingress
+  namespace: production
+  labels:
+    kubernetes.io/object: ingress
+    app: demoapp
+    env: production
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: webapp.production.local
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: demoapp-production-service
+            port:
+              number: 80

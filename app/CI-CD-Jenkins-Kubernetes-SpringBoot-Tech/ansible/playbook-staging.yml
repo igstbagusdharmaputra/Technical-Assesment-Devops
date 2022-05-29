@@ -1,0 +1,15 @@
+- hosts: vagrant
+  become_user: vagrant
+  remote_user: vagrant
+  vars:
+    DIR_APP: "/home/vagrant/ci-cd-jenkins-kubernetes-springboot-tech/k8s/staging"
+  tasks:
+  - name: Copy Deployment File
+    copy:
+      src: "{{ SOURCE_PATH }}/deployment.yml"
+      dest: "{{ DIR_APP }}/"
+  
+  - name: Apply Kubectl
+    shell: kubectl apply -f deployment.yml
+    args:
+      chdir: "{{ DIR_APP }}/"

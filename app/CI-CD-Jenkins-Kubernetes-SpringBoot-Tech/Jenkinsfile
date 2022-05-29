@@ -1,0 +1,121 @@
+pipeline {
+    agent any
+    environment{
+        SONAR_TOKEN         = credentials('SONAR_TOKEN')
+        SONAR_PROJECT_KEY   = credentials('SONAR_PROJECT_KEY')
+        SONAR_URL           = "http://192.168.1.8:31000/"
+        GITHUB_PROJECT         = "https://github.com/igstbagusdharmaputra/ci-cd-jenkins-kubernetes-springBoot-tech.git"
+    }
+    stages {
+        stage('Fetch Source Code') {
+            steps {
+                git (
+                    url: "${GITHUB_PROJECT}",
+                    branch: "${GITHUB_BRANCH}",
+                    credentialsId: "github-account"
+                )
+            }
+        }
+        stage('Scanning Source Code'){
+            when {
+                environment name: "SONARSCANNER", value:"ON"
+            }
+            steps{
+                script{
+                    echo "Scanning"
+                    script{
+                        docker.image('maven:3.8.4-openjdk-11').inside{
+                            sh 'pwd'
+                            sh 'mvn -v'
+                            sh 'mvn clean verify sonar:sonar -Dmaven.test.skip=true -Dsonar.projectKey=${SONAR_PROJECT_KEY} -Dsonar.host.url=${SONAR_URL} -Dsonar.login=${SONAR_TOKEN}'
+                        }
+                    }
+                }
+            }
+        }
+        stage('Build Staging') {
+            when{
+              allOf{
+                expression { TAG_VERSION ==~ /^v(\d{1})\.(\d{1})\.(\d{1})-(staging)$/ }
+                expression { GITHUB_BRANCH == 'staging' }
+              }
+            }
+            steps {
+                script{
+                    withCredentials([usernamePassword(credentialsId: 'docker-account', passwordVariable: 'password', usernameVariable: 'username')]){
+                        sh "docker login -u ${username} -p ${password} docker.io"
+                        sh "docker build -t dharmatkj/demoapp:${TAG_VERSION} ."
+                        sh "docker push dharmatkj/demoapp:${TAG_VERSION}"
+                        sh "docker rmi dharmatkj/demoapp:${TAG_VERSION}"
+                     }
+                }
+            }
+        }
+        stage('Build Production') {
+            when{
+              allOf{
+                expression { TAG_VERSION ==~ /^v(\d{1})\.(\d{1})\.(\d{1})-(production)$/ }
+                expression { GITHUB_BRANCH == 'main' }
+              }
+            }
+            steps {
+                script{
+                    withCredentials([usernamePassword(credentialsId: 'docker-account', passwordVariable: 'password', usernameVariable: 'username')]){
+                        sh "docker login -u ${username} -p ${password} docker.io"
+                        sh "docker build -t dharmatkj/demoapp:${TAG_VERSION} ."
+                        sh "docker push dharmatkj/demoapp:${TAG_VERSION}"
+                        sh "docker rmi dharmatkj/demoapp:${TAG_VERSION}"
+                     }
+                }
+            }
+        }
+        stage('Deploy to Staging'){
+            when{
+              allOf{
+                expression { TAG_VERSION ==~ /^v(\d{1})\.(\d{1})\.(\d{1})-(staging)$/ }
+                expression { GITHUB_BRANCH == 'staging' }
+              }
+            }
+            steps{
+                script{
+                    echo "Deploy to staging"
+                    script{
+                        withCredentials([file(credentialsId: 'PRIVATE_KEY', variable: 'myprivatekey')]) {
+                            docker.image('dharmatkj/ansible-tool:latest').inside{
+                                sh 'cp ${myprivatekey} /root/id_rsa && chmod 400 /root/id_rsa'
+                                sh 'sed -i "s/{{VERSION}}/$TAG_VERSION/g" ./k8s/staging/deployment.yml'
+                                sh 'ansible-playbook -i ansible/hosts ansible/playbook-staging.yml --extra-vars "SOURCE_PATH=${WORKSPACE}/k8s/staging"'
+                                sh ''
+                            }
+                        }  
+                    }
+                }
+            }
+        }
+        stage('Deploy to Production'){
+            when{
+              allOf{
+                expression { TAG_VERSION ==~ /^v(\d{1})\.(\d{1})\.(\d{1})-(production)$/ }
+                expression { GITHUB_BRANCH == 'main' }
+              }
+            }
+            steps{
+                script{
+                    echo "Deploy to production"
+                    script{
+                        withCredentials([file(credentialsId: 'PRIVATE_KEY', variable: 'myprivatekey')]) {
+                            docker.image('dharmatkj/ansible-tool:latest').inside{
+                                sh 'cp ${myprivatekey} /root/id_rsa && chmod 400 /root/id_rsa'
+                                sh 'sed -i "s/{{VERSION}}/$TAG_VERSION/g" ./k8s/prod/deployment.yml'
+                                sh 'ansible-playbook -i ansible/hosts ansible/playbook-production.yml --extra-vars "SOURCE_PATH=${WORKSPACE}/k8s/prod"'
+                                sh ''
+                            }
+                        }
+                       
+                    }
+                }
+            }
+        }
+    }
+    
+}

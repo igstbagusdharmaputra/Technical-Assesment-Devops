@@ -1,0 +1,15 @@
+Vagrant.configure("2") do |config|
+
+  config.vm.box = "ubuntu/focal64"
+
+  config.vm.provider "virtualbox" do |vb|
+  
+    vb.memory = "4096"
+    vb.cpus = 2
+    vb.linked_clone = true
+  end
+  config.vm.define "manager" do |manager|
+    manager.vm.network :public_network, bridge: 'Realtek 8822CE-VS Wireless LAN 802.11ac PCI-E NIC'
+  end
+  config.vm.provision "shell", path: "init.sh"
+end

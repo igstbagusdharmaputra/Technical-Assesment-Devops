@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    kubernetes.io/object: deployment
+    app: demoapp
+    env: production
+  name: demoapp-production-deployment
+  namespace: production
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: demoapp
+      env: production
+  template:
+    metadata:
+      labels:
+        app: demoapp
+        env: production
+    spec:
+      imagePullSecrets:
+        - name: dockerhubpull
+      containers:
+      - image: dharmatkj/demoapp:{{VERSION}}
+        imagePullPolicy: "Always"
+        name: demoapp
+        ports:
+          - containerPort: 8080

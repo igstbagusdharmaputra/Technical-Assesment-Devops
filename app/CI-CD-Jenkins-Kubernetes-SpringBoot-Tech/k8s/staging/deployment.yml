@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    kubernetes.io/object: deployment
+    app: demoapp
+    env: staging
+  name: demoapp-staging-deployment
+  namespace: staging
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: demoapp
+      env: staging
+  template:
+    metadata:
+      labels:
+        app: demoapp
+        env: staging
+    spec:
+      imagePullSecrets:
+        - name: dockerhubpull
+      containers:
+      - image: dharmatkj/demoapp:{{VERSION}}
+        imagePullPolicy: "Always"
+        name: demoapp
+        ports:
+          - containerPort: 8080
