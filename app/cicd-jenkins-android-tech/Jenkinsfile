@@ -1,0 +1,114 @@
+pipeline {
+    agent any
+    environment{
+        SONAR_TOKEN_ANDROID         = credentials('SONAR_TOKEN_ANDROID')
+        SONAR_PROJECT_KEY_ANDROID   = credentials('SONAR_PROJECT_KEY_ANDROID')
+        NEXUSCRED                   = credentials('NEXUSCRED')
+        SONAR_URL_ANDROID           = "http://192.168.1.14:31000/"
+        GITHUB_PROJECT              = "https://github.com/igstbagusdharmaputra/cicd-jenkins-android-tech.git"
+        NEXUS_URL                   = "http://192.168.1.14:30000"
+        REPO_NAME                   = "android-artifactory"
+        BUILD_FORMAT = 'apk'
+    }
+    stages {
+        stage('Fetch Source Code') {
+            steps {
+                script {
+                    git (
+                        url: "${GITHUB_PROJECT}",
+                        branch: "${GITHUB_BRANCH}",
+                        credentialsId: "github-account"
+                    )
+                    sh 'if [ -d result ]; then rm -rf result; fi'
+                    sh 'mkdir result'
+                }
+            }
+        }
+        stage('Scanning Source Code'){
+            when {
+                environment name: "SONARSCANNER", value:"ON"
+            }
+            steps{
+                script{
+                    echo "Scanning"
+                    script{
+                        docker.image('dharmatkj/android-tool:jdk-11').inside{
+                            sh 'pwd'
+                            sh 'chmod +x ./gradlew'
+                            sh './gradlew sonarqube -Dsonar.projectKey=${SONAR_PROJECT_KEY_ANDROID} -Dsonar.host.url=${SONAR_URL_ANDROID} -Dsonar.login=${SONAR_TOKEN_ANDROID}'
+                        }
+                    }
+                }
+            }
+        }
+        stage('Build Staging') {
+            when{
+              allOf{
+                expression { TAG_VERSION ==~ /^v(\d{1})\.(\d{1})\.(\d{1})-(staging)$/ }
+                expression { GITHUB_BRANCH == 'staging' }
+              }
+            }
+            steps {
+                script{
+                    docker.image('dharmatkj/android-tool:jdk-11').inside{
+                        sh 'pwd'
+                        sh 'chmod +x ./gradlew'
+                        sh './gradlew assembledebug'
+                        sh 'find -type f -name *.${BUILD_FORMAT} -exec cp -rf {} result/app-debug.${BUILD_FORMAT} \\;'
+                        sh 'ls -l result'
+                    }
+                }
+            }
+        }
+        stage('Build Production') {
+            when{
+              allOf{
+                expression { TAG_VERSION ==~ /^v(\d{1})\.(\d{1})\.(\d{1})-(production)$/ }
+                expression { GITHUB_BRANCH == 'main' }
+              }
+            }
+            steps {
+                script{
+                    docker.image('dharmatkj/android-tool:jdk-11').inside{
+                        sh 'pwd'
+                        sh 'chmod +x ./gradlew'
+                        sh './gradlew assembledebug'
+                        sh 'find -type f -name *.${BUILD_FORMAT} -exec cp -rf {} result/app-debug.${BUILD_FORMAT} \\;'
+                        sh 'ls -l result'
+                    }
+                }
+            }
+        }
+        stage('Upload to Nexus Apk Staging') {
+            when{
+              allOf{
+                expression { TAG_VERSION ==~ /^v(\d{1})\.(\d{1})\.(\d{1})-(staging)$/ }
+                expression { GITHUB_BRANCH == 'staging' }
+              }
+            }
+            steps {
+                script{
+                    sh 'ls -l result'
+                    sh 'cd result && tar -C $(pwd) -cvzf android.tgz *'
+                    sh "cd result && curl -X 'POST' '${NEXUS_URL}/service/rest/v1/components?repository=${REPO_NAME}' -H 'accept: application/json' -H 'Content-Type: multipart/form-data' -H 'Authorization: Basic ${NEXUSCRED}' -F 'raw.directory=${TAG_VERSION}' -F 'raw.asset1=@android.tgz;type=application/x-tgz' -F 'raw.asset1.filename=android.tgz'"
+                }
+            }
+        }
+        stage('Upload to Nexus Apk Production') {
+            when{
+              allOf{
+                expression { TAG_VERSION ==~ /^v(\d{1})\.(\d{1})\.(\d{1})-(production)$/ }
+                expression { GITHUB_BRANCH == 'main' }
+              }
+            }
+            steps {
+                script{
+                    sh 'ls -l result'
+                    sh 'cd result && tar -C $(pwd) -cvzf android.tgz *'
+                    sh "cd result && curl -X 'POST' '${NEXUS_URL}/service/rest/v1/components?repository=${REPO_NAME}' -H 'accept: application/json' -H 'Content-Type: multipart/form-data' -H 'Authorization: Basic ${NEXUSCRED}' -F 'raw.directory=${TAG_VERSION}' -F 'raw.asset1=@android.tgz;type=application/x-tgz' -F 'raw.asset1.filename=android.tgz'"
+                }
+            }
+        }
+    }
+    
+}
