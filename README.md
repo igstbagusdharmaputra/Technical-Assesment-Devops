@@ -8,3 +8,9 @@ This project explains how it works in CI/CD ( Continous Integration/Continous De
 - [How to Use](#how-to-use)
    + [CI/CD Web](#cicd-web)
    + [CI/CD Android](#cicd-android)
+
+## Design Architecture
+
+#### Kubernetes Platform
+
+![text](./img/design/k8s.jpg)
