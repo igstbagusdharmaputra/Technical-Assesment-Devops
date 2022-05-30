@@ -14,3 +14,11 @@ This project explains how it works in CI/CD ( Continous Integration/Continous De
 #### Kubernetes Platform
 
 ![text](./img/design/k8s.jpg)
+
+#### CI/CD Flow Web Application
+
+![text](./img/design/cicd_web.jpg)
+
+#### CI/CD Flow Android Application
+
+![text](./img/design/cicd_android.jpg)
