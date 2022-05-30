@@ -5,9 +5,7 @@ This project explains how it works in CI/CD ( Continous Integration/Continous De
 ## Table Of Content
 
 - [Design Architecture](#design-architecture)
-- [How to Use](#how-to-use)
-   + [CI/CD Web](#cicd-web)
-   + [CI/CD Android](#cicd-android)
+- [How to Use CI/CD Web backend and Android](./document/Technical%20Assesment%20Devops.pdf)
 
 ## Design Architecture
 
