@@ -4,9 +4,9 @@ pipeline {
         SONAR_TOKEN_ANDROID         = credentials('SONAR_TOKEN_ANDROID')
         SONAR_PROJECT_KEY_ANDROID   = credentials('SONAR_PROJECT_KEY_ANDROID')
         NEXUSCRED                   = credentials('NEXUSCRED')
-        SONAR_URL_ANDROID           = "http://192.168.1.14:31000/"
+        SONAR_URL_ANDROID           = "http://192.168.1.8:31000/"
         GITHUB_PROJECT              = "https://github.com/igstbagusdharmaputra/cicd-jenkins-android-tech.git"
-        NEXUS_URL                   = "http://192.168.1.14:30000"
+        NEXUS_URL                   = "http://192.168.1.8:30000"
         REPO_NAME                   = "android-artifactory"
         BUILD_FORMAT = 'apk'
     }
